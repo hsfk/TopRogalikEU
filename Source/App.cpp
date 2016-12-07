@@ -43,7 +43,7 @@ void TopRogalikEUApplication::initialise(const juce::String& commandLine)
         Settings::initialize("settings.cfg");
         GameMap* map = Reader::read_map_from_file(Settings::Game::get_map());
         if (!map)
-                quit();
+                map = Reader::get_default_map();
         GlobalState* gstate = new GlobalState(map);
         MainContentComponent* comp = new MainContentComponent(gstate);
         game_manager = new GameManager(comp, gstate);
