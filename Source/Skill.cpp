@@ -52,7 +52,6 @@ void BladeVortex::use(game_object::Character* user)
         if (!enough_stats(user))
                 return;
         burn_stats(user);
-        GameMap& map = *user->get_gdata()->get_map();
         add_animation(user);
         for (int i = 0; i < 4; i++)   
                 deal_damage(user, user->get_pos() + directions[i], user->get_stats().get_dmg());

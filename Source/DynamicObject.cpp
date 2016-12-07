@@ -1,4 +1,4 @@
-#include "DynamicObject.h"
+ #include "DynamicObject.h"
 #include "StaticObject.h"
 #include "TempObject.h"
 #include "GlobalData.h"
@@ -51,7 +51,8 @@ bool game_object::Character::see(juce::Point<int> pos, int r)
                 if (!gdata->get_map()->in_range(p))
                         return false;
                 const GameMap::Tile* cell = gdata->get_map()->get_tile(p);
-                if (cell->static_obj && !cell->static_obj->passable() || cell->dynamic_obj)
+
+                if ((cell->static_obj && !cell->static_obj->passable()) || cell->dynamic_obj)
                         return i == length;
         }
         return true;

@@ -23,8 +23,6 @@ std::vector<Item*> DropManager::get_drop(int iir, int iiq)
                 return result; // no drop =(
 
         int item_count = 1;
-
-        int rand = RNG::next_uint() % 100;
         while (RNG::next_uint() % 100 <= quantity)
                 item_count++;  
 

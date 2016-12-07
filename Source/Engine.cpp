@@ -23,7 +23,8 @@ void Engine::initialize(const GameMap* map, int width, int height, int cell_size
 
 const Image* Engine::render()
 {
-        gbuffer->fillAll(Colours::black);
+        Graphics g(*buffer);
+        g.fillAll(Colours::black);
         render_submap(get_camera_range());
         render_hud();
         render_hotkey_tab();
@@ -33,18 +34,19 @@ const Image* Engine::render()
 const Image* Engine::render_inventory()
 {
         render();
-        gbuffer->fillAll(juce::Colour::fromRGBA(0, 0, 0, 180));
+        Graphics(*buffer).fillAll(juce::Colour::fromRGBA(0, 0, 0, 180));
         render_backpack();
         return buffer;
 }
 
 const Image* Engine::render_gameover()
 {
-        gbuffer->fillAll(Colours::black);
-        gbuffer->setColour(Colours::white);
+        Graphics g(*buffer);
+        g.fillAll(Colours::black);
+        g.setColour(Colours::white);
         const juce::String msg("GAME OVER, press ENTER to restart...");
-        gbuffer->drawSingleLineText(msg,
-                (buffer->getWidth() - gbuffer->getCurrentFont().getStringWidth(msg)) / 2, buffer->getHeight() / 2);
+        g.drawSingleLineText(msg,
+                (buffer->getWidth() - g.getCurrentFont().getStringWidth(msg)) / 2, buffer->getHeight() / 2);
         return buffer;
 }
 
@@ -81,19 +83,20 @@ void Engine::render_backpack()
 
 void Engine::render_item(const Item* item, juce::Point<int> pixel_pos, bool selection_tile, bool selected)
 {
+        Graphics g(*buffer);
         const Image* tile = Resource::get_inventory_tile();
         if (selection_tile)
                 tile = selected ? Resource::get_inventory_selected_tile()
                         : Resource::get_inventory_tile_selection();
-        gbuffer->drawImageAt(*tile, pixel_pos.x, pixel_pos.y);
+        g.drawImageAt(*tile, pixel_pos.x, pixel_pos.y);
         if (!item)
                 return;
-        gbuffer->drawImageAt(*item->get_icon(), pixel_pos.x + 2, pixel_pos.y + 2);
+        g.drawImageAt(*item->get_icon(), pixel_pos.x + 2, pixel_pos.y + 2);
         if (item->get_count() > 1)
         {
-                gbuffer->setColour(juce::Colours::white);
-                int yoff = cell_size - (int)gbuffer->getCurrentFont().getHeight();
-                gbuffer->drawSingleLineText(String(item->get_count()), pixel_pos.x, pixel_pos.y + yoff);
+                g.setColour(juce::Colours::white);
+                int yoff = cell_size - (int)g.getCurrentFont().getHeight();
+                g.drawSingleLineText(String(item->get_count()), pixel_pos.x, pixel_pos.y + yoff);
         }
 }
 
@@ -120,15 +123,16 @@ Image* Engine::create_empty_image()
 
 void Engine::render_obj(const game_object::GameObject* obj, const juce::Point<int> pos)
 {
+        Graphics g(*buffer);
         if (!obj->get_sprite())
         {
                 if (!map->get_player()->see(obj->get_pos()))
-                        gbuffer->setColour(obj->get_color().darker());
+                        g.setColour(obj->get_color().darker());
                 else
-                        gbuffer->setColour(obj->get_color());
+                        g.setColour(obj->get_color());
                 juce::Rectangle<int> rect(cell_size, cell_size);
                 rect.setPosition(pos * cell_size);
-                gbuffer->fillRect(rect);
+                g.fillRect(rect);
         }
         else
                 render_obj_sprite(obj, pos);
@@ -136,51 +140,55 @@ void Engine::render_obj(const game_object::GameObject* obj, const juce::Point<in
 
 void Engine::render_obj_sprite(const game_object::GameObject* obj, juce::Point<int> pos)
 {
+        Graphics g(*buffer);
         const juce::Image* sprite = obj->get_sprite();
         int yoff = abs(cell_size - sprite->getHeight());
         int xoff = abs(cell_size - sprite->getWidth()) / 2;
         pos = (pos * cell_size) - juce::Point<int>(xoff, yoff);
 
-        gbuffer->drawImageAt(*sprite, pos.x, pos.y);
+        g.drawImageAt(*sprite, pos.x, pos.y);
         if (!map->get_player()->see(obj->get_pos()))
         {
                 juce::Rectangle<int> r(pos.x, pos.y, sprite->getWidth(), sprite->getHeight());
-                gbuffer->setColour(juce::Colour::fromRGBA(0, 0, 0, 128));
-                gbuffer->fillRect(r);
-                gbuffer->setColour(juce::Colours::black);
+                g.setColour(juce::Colour::fromRGBA(0, 0, 0, 128));
+                g.fillRect(r);
+                g.setColour(juce::Colours::black);
         }
         render_obj_state(obj, pos);
 }
 
 void Engine::render_sprite_centrified(const juce::Image* sprite, juce::Point<int> pos)
 {
+        Graphics g(*buffer);
         pos *= cell_size;
         pos -= (juce::Point<int>(sprite->getWidth() - cell_size, sprite->getHeight() - cell_size) / 2);
-        gbuffer->drawImageAt(*sprite, pos.x, pos.y);
+        g.drawImageAt(*sprite, pos.x, pos.y);
 }
 
 void Engine::render_sprite_bottom_aligned(const juce::Image* sprite, juce::Point<int> pos)
 {
+        Graphics g(*buffer);
         pos *= cell_size;
         pos.x -= (sprite->getWidth() - cell_size) / 2;
         pos.y += cell_size - sprite->getHeight();
-        gbuffer->drawImageAt(*sprite, pos.x, pos.y);
+        g.drawImageAt(*sprite, pos.x, pos.y);
 }
 
 void Engine::render_obj_state(const game_object::GameObject* obj, juce::Point<int> top_left)
 {
+        Graphics g(*buffer);
         if (obj->get_stats().cur_hp == obj->get_stats().max_hp)
                 return;
         top_left.y -= 3;
         const juce::Image* sprite = obj->get_sprite();
         juce::Rectangle<int> hp(top_left.x, top_left.y, sprite->getWidth(), 3);
-        gbuffer->setColour(juce::Colours::black);
-        gbuffer->fillRect(hp);
-        gbuffer->setColour(juce::Colours::red);
+        g.setColour(juce::Colours::black);
+        g.fillRect(hp);
+        g.setColour(juce::Colours::red);
         if (obj->get_pos() == obj->get_gdata()->get_map()->get_player()->get_pos())
-                gbuffer->setColour(juce::Colours::yellowgreen);
+                g.setColour(juce::Colours::yellowgreen);
         hp.setWidth((obj->get_stats().cur_hp * hp.getWidth()) / obj->get_stats().max_hp);
-        gbuffer->fillRect(hp);
+        g.fillRect(hp);
 }
 
 void Engine::render_submap(const juce::Rectangle<int> region)
@@ -197,29 +205,32 @@ void Engine::render_hud()
 
 void Engine::render_hud_left()
 {
+        Graphics g(*buffer);
         const Stats& pstats = map->get_player()->get_stats();
         const juce::Image* orb = hud->get_health_orb((float)pstats.cur_hp / (float)pstats.max_hp);
         juce::Point<int> lpos(0, buffer->getHeight() - hud->get_left()->getHeight());
-        gbuffer->drawImageAt(*orb, lpos.x, lpos.y);
-        gbuffer->drawImageAt(*hud->get_left(), lpos.x, lpos.y);
+        g.drawImageAt(*orb, lpos.x, lpos.y);
+        g.drawImageAt(*hud->get_left(), lpos.x, lpos.y);
 }
 
 void Engine::render_hud_right()
 {
+        Graphics g(*buffer);
         const Stats& pstats = map->get_player()->get_stats();
         const juce::Image* orb = hud->get_mana_orb((float)pstats.cur_mana / (float)pstats.max_mana);
         juce::Point<int> rpos(buffer->getWidth() - hud->get_right()->getWidth(),
                 buffer->getHeight() - hud->get_left()->getHeight());
-        gbuffer->drawImageAt(*orb, rpos.x, rpos.y);
-        gbuffer->drawImageAt(*hud->get_right(), rpos.x, rpos.y);
+        g.drawImageAt(*orb, rpos.x, rpos.y);
+        g.drawImageAt(*hud->get_right(), rpos.x, rpos.y);
 }
 
 void Engine::render_obstacle(const game_object::StaticObject* obj, const juce::Point<int> pos)
 {
+        Graphics g(*buffer);
         if (obj->hides_player())
-                gbuffer->setColour(juce::Colour::fromRGBA(0, 0, 0, Settings::Graphics::get_wall_transparency()));
+                g.setColour(juce::Colour::fromRGBA(0, 0, 0, Settings::Graphics::get_wall_transparency()));
         render_obj(obj, pos);
-        gbuffer->setColour(juce::Colours::black);
+        g.setColour(juce::Colours::black);
 }
 
 void Engine::render_ground(const juce::Rectangle<int> region)

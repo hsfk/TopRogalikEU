@@ -58,7 +58,6 @@ void GameMap::add_game_obj(char c, juce::Point<int> pos)
                         portals[c] = portal;
                 else
                         portals[c]->bind(portal);
-                int jej = 2;
         }
         else
                 return;
