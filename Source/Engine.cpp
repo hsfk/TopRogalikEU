@@ -25,17 +25,18 @@ const Image* Engine::render()
 {
         Graphics g(*buffer);
         g.fillAll(Colours::black);
-        render_submap(get_camera_range());
-        render_hud();
-        render_hotkey_tab();
+        render_submap(g, get_camera_range());
+        render_hud(g);
+        render_hotkey_tab(g);
         return buffer;
 }
 
 const Image* Engine::render_inventory()
 {
         render();
-        Graphics(*buffer).fillAll(juce::Colour::fromRGBA(0, 0, 0, 180));
-        render_backpack();
+        Graphics g(*buffer);
+        g.fillAll(juce::Colour::fromRGBA(0, 0, 0, 180));
+        render_backpack(g);
         return buffer;
 }
 
@@ -50,7 +51,7 @@ const Image* Engine::render_gameover()
         return buffer;
 }
 
-void Engine::render_hotkey_tab()
+void Engine::render_hotkey_tab(juce::Graphics& g)
 {
         int tile_size = Resource::get_inventory_tile()->getWidth() + 1;
         const PlayerInventory* inv = map->get_player()->get_inventory();
@@ -59,12 +60,12 @@ void Engine::render_hotkey_tab()
         for (int i = 0; i < inv->get_width(); i++)
         {
                 juce::Point<int> pos(i, 0);
-                render_item(inv->get_item(pos), off + pos * tile_size,
+                render_item(g, inv->get_item(pos), off + pos * tile_size,
                         map->get_player()->get_current_item() == i, false);
         }
 }
 
-void Engine::render_backpack()
+void Engine::render_backpack(juce::Graphics& g)
 {
         int tile_size = Resource::get_inventory_tile()->getWidth() + 1;
         const PlayerInventory* inv = map->get_player()->get_inventory();
@@ -74,16 +75,15 @@ void Engine::render_backpack()
                 for (int j = 0; j < inv->get_width(); j++)
                 {
                         juce::Point<int> pos(j, i);
-                        render_item(inv->get_item(pos),
+                        render_item(g, inv->get_item(pos),
                                 off + pos * tile_size,
                                 pos == inv->get_selection_tile(),
                                 inv->is_selected());
                 }
 }
 
-void Engine::render_item(const Item* item, juce::Point<int> pixel_pos, bool selection_tile, bool selected)
+void Engine::render_item(juce::Graphics& g, const Item* item, juce::Point<int> pixel_pos, bool selection_tile, bool selected)
 {
-        Graphics g(*buffer);
         const Image* tile = Resource::get_inventory_tile();
         if (selection_tile)
                 tile = selected ? Resource::get_inventory_selected_tile()
@@ -121,9 +121,8 @@ Image* Engine::create_empty_image()
         return new Image(Image::RGB, width * cell_size, height * cell_size, true);
 }
 
-void Engine::render_obj(const game_object::GameObject* obj, const juce::Point<int> pos)
+void Engine::render_obj(juce::Graphics& g, const game_object::GameObject* obj, const juce::Point<int> pos)
 {
-        Graphics g(*buffer);
         if (!obj->get_sprite())
         {
                 if (!map->get_player()->see(obj->get_pos()))
@@ -135,12 +134,11 @@ void Engine::render_obj(const game_object::GameObject* obj, const juce::Point<in
                 g.fillRect(rect);
         }
         else
-                render_obj_sprite(obj, pos);
+                render_obj_sprite(g, obj, pos);
 }
 
-void Engine::render_obj_sprite(const game_object::GameObject* obj, juce::Point<int> pos)
+void Engine::render_obj_sprite(juce::Graphics& g, const game_object::GameObject* obj, juce::Point<int> pos)
 {
-        Graphics g(*buffer);
         const juce::Image* sprite = obj->get_sprite();
         int yoff = abs(cell_size - sprite->getHeight());
         int xoff = abs(cell_size - sprite->getWidth()) / 2;
@@ -154,29 +152,26 @@ void Engine::render_obj_sprite(const game_object::GameObject* obj, juce::Point<i
                 g.fillRect(r);
                 g.setColour(juce::Colours::black);
         }
-        render_obj_state(obj, pos);
+        render_obj_state(g, obj, pos);
 }
 
-void Engine::render_sprite_centrified(const juce::Image* sprite, juce::Point<int> pos)
+void Engine::render_sprite_centrified(juce::Graphics& g, const juce::Image* sprite, juce::Point<int> pos)
 {
-        Graphics g(*buffer);
         pos *= cell_size;
         pos -= (juce::Point<int>(sprite->getWidth() - cell_size, sprite->getHeight() - cell_size) / 2);
         g.drawImageAt(*sprite, pos.x, pos.y);
 }
 
-void Engine::render_sprite_bottom_aligned(const juce::Image* sprite, juce::Point<int> pos)
+void Engine::render_sprite_bottom_aligned(juce::Graphics& g, const juce::Image* sprite, juce::Point<int> pos)
 {
-        Graphics g(*buffer);
         pos *= cell_size;
         pos.x -= (sprite->getWidth() - cell_size) / 2;
         pos.y += cell_size - sprite->getHeight();
         g.drawImageAt(*sprite, pos.x, pos.y);
 }
 
-void Engine::render_obj_state(const game_object::GameObject* obj, juce::Point<int> top_left)
+void Engine::render_obj_state(juce::Graphics& g, const game_object::GameObject* obj, juce::Point<int> top_left)
 {
-        Graphics g(*buffer);
         if (obj->get_stats().cur_hp == obj->get_stats().max_hp)
                 return;
         top_left.y -= 3;
@@ -191,21 +186,20 @@ void Engine::render_obj_state(const game_object::GameObject* obj, juce::Point<in
         g.fillRect(hp);
 }
 
-void Engine::render_submap(const juce::Rectangle<int> region)
+void Engine::render_submap(juce::Graphics& g, const juce::Rectangle<int> region)
 {
-        render_ground(region);
-        render_other(region);
+        render_ground(g, region);
+        render_other(g, region);
 }
 
-void Engine::render_hud()
+void Engine::render_hud(juce::Graphics& g)
 {
-        render_hud_left();
-        render_hud_right();
+        render_hud_left(g);
+        render_hud_right(g);
 }
 
-void Engine::render_hud_left()
+void Engine::render_hud_left(juce::Graphics& g)
 {
-        Graphics g(*buffer);
         const Stats& pstats = map->get_player()->get_stats();
         const juce::Image* orb = hud->get_health_orb((float)pstats.cur_hp / (float)pstats.max_hp);
         juce::Point<int> lpos(0, buffer->getHeight() - hud->get_left()->getHeight());
@@ -213,9 +207,8 @@ void Engine::render_hud_left()
         g.drawImageAt(*hud->get_left(), lpos.x, lpos.y);
 }
 
-void Engine::render_hud_right()
+void Engine::render_hud_right(juce::Graphics& g)
 {
-        Graphics g(*buffer);
         const Stats& pstats = map->get_player()->get_stats();
         const juce::Image* orb = hud->get_mana_orb((float)pstats.cur_mana / (float)pstats.max_mana);
         juce::Point<int> rpos(buffer->getWidth() - hud->get_right()->getWidth(),
@@ -224,16 +217,15 @@ void Engine::render_hud_right()
         g.drawImageAt(*hud->get_right(), rpos.x, rpos.y);
 }
 
-void Engine::render_obstacle(const game_object::StaticObject* obj, const juce::Point<int> pos)
+void Engine::render_obstacle(juce::Graphics& g, const game_object::StaticObject* obj, const juce::Point<int> pos)
 {
-        Graphics g(*buffer);
         if (obj->hides_player())
                 g.setColour(juce::Colour::fromRGBA(0, 0, 0, Settings::Graphics::get_wall_transparency()));
-        render_obj(obj, pos);
+        render_obj(g, obj, pos);
         g.setColour(juce::Colours::black);
 }
 
-void Engine::render_ground(const juce::Rectangle<int> region)
+void Engine::render_ground(juce::Graphics& g, const juce::Rectangle<int> region)
 {
         RectIterator<int> it = get_camera_range();
         while (!it.end())
@@ -243,12 +235,12 @@ void Engine::render_ground(const juce::Rectangle<int> region)
                 {
                         GameMap::Tile* tile = map->get_tile(pos);
                         if (tile->static_obj && tile->static_obj->passable())
-                                render_obj(tile->static_obj, pos - region.getTopLeft());
+                                render_obj(g, tile->static_obj, pos - region.getTopLeft());
                 }
         }
 }
 
-void Engine::render_other(const juce::Rectangle<int> region)
+void Engine::render_other(juce::Graphics& g, const juce::Rectangle<int> region)
 {
         RectIterator<int> it = get_camera_range();
         while (!it.end())
@@ -260,28 +252,28 @@ void Engine::render_other(const juce::Rectangle<int> region)
                         bool visible = map->get_player()->see(pos);
                         pos -= region.getTopLeft();
                         if (tile->temp_objs.size() > 0)
-                                render_temp_obj_list(tile->temp_objs, pos);
+                                render_temp_obj_list(g, tile->temp_objs, pos);
 
                         if (tile->dynamic_obj && visible)
-                                render_obj(tile->dynamic_obj, pos);
+                                render_obj(g, tile->dynamic_obj, pos);
 
                         if (tile->animations->size() > 0)
-                                render_animation_list(tile->animations, pos);
+                                render_animation_list(g, tile->animations, pos);
 
                         if (tile->static_obj && !tile->static_obj->passable())
-                                render_obstacle(tile->static_obj, pos);
+                                render_obstacle(g, tile->static_obj, pos);
                 }
         }
 }
 
-void Engine::render_temp_obj_list(std::list<game_object::TempObject*> list, const juce::Point<int> pos)
+void Engine::render_temp_obj_list(juce::Graphics& g, std::list<game_object::TempObject*> list, const juce::Point<int> pos)
 {
         std::list<game_object::TempObject*>::iterator it = list.begin();
         while (it != list.end())
-                render_sprite_centrified((*it++)->get_sprite(), pos);
+                render_sprite_centrified(g, (*it++)->get_sprite(), pos);
 }
 
-void Engine::render_animation_list(AnimationList* list, const juce::Point<int> pos)
+void Engine::render_animation_list(juce::Graphics& g, AnimationList* list, const juce::Point<int> pos)
 {
         size_t size = list->size();
         for (size_t i = 0; i < size; i++)
@@ -293,9 +285,9 @@ void Engine::render_animation_list(AnimationList* list, const juce::Point<int> p
                 {
                         list->push(animation);
                         if (animation->get_align() == Animation::Align::center)
-                                render_sprite_centrified(animation->get_frame(), pos);
+                                render_sprite_centrified(g ,animation->get_frame(), pos);
                         else
-                                render_sprite_bottom_aligned(animation->get_frame(), pos);
+                                render_sprite_bottom_aligned(g, animation->get_frame(), pos);
                 }
         }
 }
